@@ -1,12 +1,12 @@
-
-use std::convert::Into;
+use super::commands::parse_message;
 use serenity::all::{ActivityData, Ready};
 use serenity::async_trait;
 use serenity::model::{channel::Message, user::OnlineStatus};
 use serenity::prelude::*;
+use std::convert::Into;
 
 /// Constant prefix for commands
-static PREFIX: &str = "&&";
+pub static PREFIX: &str = "&&";
 
 /// Constant for the default activity of the bot
 fn default_activity() -> Option<ActivityData> {
@@ -26,15 +26,15 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if let Some(resp) = parse_message(&msg).await {
-            if let Err(err) = msg.channel_id.say(&ctx.http, resp).await {
-                eprintln!("Error sending message: {:?}", err);
-            }
+        if let Some(resp) = parse_message(&msg).await
+            && let Err(err) = msg.channel_id.say(&ctx.http, resp).await
+        {
+            tracing::error!("Error sending message: {:?}", err);
         }
     }
 
     async fn ready(&self, ctx: Context, data_about_bot: Ready) {
-        println!("{} is connected!", data_about_bot.user.name);
+        tracing::info!("{} is connected!", data_about_bot.user.name);
 
         // Set the bot's status
         set_status(&ctx, default_activity(), default_status()).await;
@@ -51,34 +51,13 @@ pub async fn create_client(token: String) -> Client {
 }
 
 /// Change the bot's status to online and set the activity to "Playing with Rust"
-pub async fn set_status(ctx: &Context, activity: Option<ActivityData>, status: Option<OnlineStatus>) {
-    let activity_data = activity.or_else(|| default_activity());
+pub async fn set_status(
+    ctx: &Context,
+    activity: Option<ActivityData>,
+    status: Option<OnlineStatus>,
+) {
+    let activity_data = activity.or_else(default_activity);
     let status = status.unwrap_or(OnlineStatus::DoNotDisturb);
 
     ctx.set_presence(activity_data, status);
 }
-
-/// Parse a message and return a response if the message is a command the bot recognizes
-async fn parse_message(msg: &Message) -> Option<String> {
-    if !msg.content.starts_with(PREFIX) {
-        return None;
-    }
-
-    // Trim the prefix and split the message into command and args
-    let content = msg.content.trim_start_matches(PREFIX);
-
-    // Split the content into command and arguments
-    let mut parts = content.split_whitespace();
-    let command = parts.next()?;
-    let args: Vec<&str> = parts.collect();
-
-    // Match the command and generate a response
-    match command {
-        "ping" => Some("Pong!".to_string()),
-        "echo" => Some(args.join(" ")),
-        _ => Some(format!("Unknown command: {}", command)),
-    }
-}
-
-
-
