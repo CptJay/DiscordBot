@@ -1,4 +1,5 @@
 use super::commands::parse_message;
+use crate::riot::client::RiotApiClient;
 use serenity::all::{ActivityData, Ready};
 use serenity::async_trait;
 use serenity::model::{channel::Message, user::OnlineStatus};
@@ -6,7 +7,7 @@ use serenity::prelude::*;
 use std::convert::Into;
 
 /// Constant prefix for commands
-pub static PREFIX: &str = "&&";
+pub static PREFIX: &str = "&";
 
 /// Constant for the default activity of the bot
 fn default_activity() -> Option<ActivityData> {
@@ -19,14 +20,16 @@ fn default_status() -> Option<OnlineStatus> {
 }
 
 /// Handler for events
-struct Handler;
+struct Handler {
+    riot_client: RiotApiClient,
+}
 
 /// Handler for events
 /// - messages being sent in channels the bot has access to
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if let Some(resp) = parse_message(&msg).await
+        if let Some(resp) = parse_message(&msg, &self.riot_client).await
             && let Err(err) = msg.channel_id.say(&ctx.http, resp).await
         {
             tracing::error!("Error sending message: {:?}", err);
@@ -42,12 +45,19 @@ impl EventHandler for Handler {
 }
 
 /// Create a new client, which will automatically prepend your bot token to requests.
-pub async fn create_client(token: String) -> Client {
+pub async fn create_client(
+    token: String,
+    riot_client: RiotApiClient,
+) -> Result<Client, Box<dyn std::error::Error>> {
+    // Assign the riot client to the handler
+    let handler = Handler { riot_client };
+
     // TODO: Remove the `GatewayIntents::all()` and only add the intents we need
-    Client::builder(&token, GatewayIntents::all())
-        .event_handler(Handler)
-        .await
-        .expect("Error creating client")
+    let client = Client::builder(&token, GatewayIntents::all())
+        .event_handler(handler)
+        .await?;
+
+    Ok(client)
 }
 
 /// Change the bot's status to online and set the activity to "Playing with Rust"

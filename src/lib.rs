@@ -1,8 +1,10 @@
 pub mod riot {
     pub mod client;
     pub mod endpoints {
-        pub mod summoner;
+        pub mod base;
+        pub mod endpoints;
     }
+    pub mod models;
 }
 
 pub mod discord {
