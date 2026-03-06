@@ -8,10 +8,9 @@ use serenity::model::channel::Message;
 use serenity::prelude::*;
 use std::sync::{Arc, Mutex};
 
-
 /// Handler for events
 struct Handler {
-    riot_client: RiotApiClient,
+    riot_client: Arc<RiotApiClient>,
     cache: Arc<Mutex<Cache>>,
 }
 
@@ -27,7 +26,8 @@ impl EventHandler for Handler {
         };
         // Use a mutable clone for parse_message
         let mut cache_for_lookup = cache_snapshot;
-        let response = parse_message(&msg, &self.riot_client, &mut cache_for_lookup).await;
+        let response =
+            parse_message(&msg, Arc::clone(&self.riot_client), &mut cache_for_lookup).await;
 
         // If cache was updated (i.e., not a cache hit), write back
         {
@@ -58,7 +58,7 @@ pub async fn create_client(
     // Load cache from file
     let cache = Cache::load(USER_CACHE_PATH);
     let handler = Handler {
-        riot_client,
+        riot_client: Arc::new(riot_client),
         cache: Arc::new(Mutex::new(cache)),
     };
 
