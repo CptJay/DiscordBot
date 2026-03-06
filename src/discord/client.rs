@@ -1,21 +1,15 @@
 use super::commands::parse_message;
-use crate::riot::client::RiotApiClient;
+use crate::constants::{DEFAULT_STATUS, USER_CACHE_PATH, default_activity};
 use crate::riot::cache::Cache;
-use crate::constants::USER_CACHE_PATH;
-use serenity::all::{ActivityData, Ready};
+use crate::riot::client::RiotApiClient;
+use serenity::all::Ready;
 use serenity::async_trait;
-use serenity::model::{channel::Message, user::OnlineStatus};
+use serenity::model::channel::Message;
 use serenity::prelude::*;
-use std::convert::Into;
 use std::sync::{Arc, Mutex};
 
 /// Constant prefix for commands
 pub static PREFIX: &str = "&";
-
-/// Constant for the default activity of the bot
-fn default_activity() -> Option<ActivityData> {
-    ActivityData::playing("with Rust").into()
-}
 
 /// Handler for events
 struct Handler {
@@ -44,12 +38,16 @@ impl EventHandler for Handler {
         }
 
         if let Some(resp) = response
-            && let Err(err) = msg.channel_id.say(&ctx.http, resp).await {
-                tracing::error!("Error sending message: {:?}", err);
-            }
+            && let Err(err) = msg.channel_id.say(&ctx.http, resp).await
+        {
+            tracing::error!("Error sending message: {:?}", err);
+        }
     }
 
-    async fn ready(&self, _ctx: Context, data_about_bot: Ready) {
+    async fn ready(&self, ctx: Context, data_about_bot: Ready) {
+        // Set the bot's presence (status and activity)
+        ctx.set_presence(default_activity(), DEFAULT_STATUS);
+
         tracing::info!("{} is connected!", data_about_bot.user.name);
     }
 }
@@ -61,7 +59,10 @@ pub async fn create_client(
 ) -> Result<Client, Box<dyn std::error::Error>> {
     // Load cache from file
     let cache = Cache::load(USER_CACHE_PATH);
-    let handler = Handler { riot_client, cache: Arc::new(Mutex::new(cache)) };
+    let handler = Handler {
+        riot_client,
+        cache: Arc::new(Mutex::new(cache)),
+    };
 
     // TODO: Remove the `GatewayIntents::all()` and only add the intents we need
     let client = Client::builder(&token, GatewayIntents::all())
@@ -69,16 +70,4 @@ pub async fn create_client(
         .await?;
 
     Ok(client)
-}
-
-/// Change the bot's status to online and set the activity to "Playing with Rust"
-pub async fn set_status(
-    ctx: &Context,
-    activity: Option<ActivityData>,
-    status: Option<OnlineStatus>,
-) {
-    let activity_data = activity.or_else(default_activity);
-    let status = status.unwrap_or(OnlineStatus::DoNotDisturb);
-
-    ctx.set_presence(activity_data, status);
 }
