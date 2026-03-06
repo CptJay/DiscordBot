@@ -1,5 +1,6 @@
 // LOL-CHALLENGES-V1 endpoints stub
 
+#[derive(Debug)]
 pub enum LolChallengesEndpoint {
     PlayerData { puuid: String },
 }
@@ -7,7 +8,9 @@ pub enum LolChallengesEndpoint {
 impl super::RiotEndpoint for LolChallengesEndpoint {
     fn path(&self) -> String {
         match self {
-            LolChallengesEndpoint::PlayerData { puuid } => format!("/lol/challenges/v1/player-data/{}", puuid),
+            LolChallengesEndpoint::PlayerData { puuid } => {
+                format!("/lol/challenges/v1/player-data/{}", puuid)
+            }
         }
     }
 }

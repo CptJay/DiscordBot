@@ -1,5 +1,6 @@
 // LEAGUE-V4 endpoints stub
 
+#[derive(Debug)]
 pub enum LeagueEndpoint {
     Challenger { queue: String },
 }
@@ -7,7 +8,9 @@ pub enum LeagueEndpoint {
 impl super::RiotEndpoint for LeagueEndpoint {
     fn path(&self) -> String {
         match self {
-            LeagueEndpoint::Challenger { queue } => format!("/lol/league/v4/challengerleagues/by-queue/{}", queue),
+            LeagueEndpoint::Challenger { queue } => {
+                format!("/lol/league/v4/challengerleagues/by-queue/{}", queue)
+            }
         }
     }
 }

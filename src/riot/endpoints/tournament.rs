@@ -1,5 +1,6 @@
 // TOURNAMENT-V5 endpoints stub
 
+#[derive(Debug)]
 pub enum TournamentEndpoint {
     Codes,
 }

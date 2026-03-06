@@ -1,5 +1,6 @@
 // LOL-STATUS-V4 endpoints stub
 
+#[derive(Debug)]
 pub enum LolStatusEndpoint {
     PlatformData,
 }

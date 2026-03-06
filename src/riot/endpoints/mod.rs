@@ -20,6 +20,7 @@ pub trait RiotEndpoint {
     }
 }
 
+#[derive(Debug)]
 /// Enum to wrap all endpoint groups
 pub enum Endpoint {
     Account(account::AccountEndpoint),

@@ -1,5 +1,6 @@
 // ACCOUNT-V1 endpoints stub
 
+#[derive(Debug)]
 pub enum AccountEndpoint {
 	ByPuuid { puuid: String },
 	ByRiotId { game_name: String, tag_line: String },

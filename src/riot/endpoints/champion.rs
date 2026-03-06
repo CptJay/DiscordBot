@@ -1,5 +1,6 @@
 // CHAMPION-V3 endpoints stub
 
+#[derive(Debug)]
 pub enum ChampionEndpoint {
     Rotation,
 }
