@@ -2,6 +2,7 @@ use super::super::riot::cache::Cache;
 use super::super::riot::client::RiotApiClient;
 use crate::constants::PREFIX;
 use crate::riot::endpoints::{Endpoint, summoner::SummonerEndpoint};
+use crate::utils::parse_riot_ids;
 use serenity::model::channel::Message;
 use std::collections::HashMap;
 use std::future::Future;
@@ -19,25 +20,6 @@ type CommandHandler = Box<
         + Send
         + Sync,
 >;
-
-// --- Helper Functions ---
-/// Helper to parse <Username#Tag> pairs from a string
-fn parse_riot_ids(input: &str) -> Vec<(String, String)> {
-    input
-        .split(';')
-        .filter_map(|entry| {
-            let entry = entry.trim();
-            let mut parts = entry.split('#');
-            let name = parts.next()?.trim().to_string();
-            let tag = parts.next()?.trim().to_string();
-            if !name.is_empty() && !tag.is_empty() {
-                Some((name, tag))
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 // --- Command Map ---
 fn command_map() -> HashMap<&'static str, CommandHandler> {
