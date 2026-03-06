@@ -9,6 +9,10 @@ pub struct Cache {
 }
 
 impl Cache {
+    pub fn sync(&self) {
+        self.save(USER_CACHE_PATH);
+    }
+
     pub fn load<P: AsRef<std::path::Path>>(_path: P) -> Self {
         let path = USER_CACHE_PATH;
         if let Ok(data) = std::fs::read_to_string(path) {
