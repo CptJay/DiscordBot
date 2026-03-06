@@ -1,8 +1,8 @@
 use crate::{
-    discord::client::PREFIX,
+    constants::PREFIX,
+    riot::cache::Cache,
     riot::endpoints::{Endpoint, RiotEndpoint, base::Region, summoner::SummonerEndpoint},
     riot::models::summoner::{SummonerData, SummonerDataV4},
-    riot::cache::Cache,
 };
 use reqwest::Client;
 use std::error::Error;
@@ -98,7 +98,9 @@ pub async fn parse_lookup_command(
     if let Some(puuid) = cache.get_user_puuid(game_name, tag_line) {
         tracing::info!("Cache hit for {}#{}: puuid={}", game_name, tag_line, puuid);
         // Use cached puuid for further lookups
-        let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid: puuid.clone() });
+        let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid {
+            puuid: puuid.clone(),
+        });
         let summoner_data_v4: Option<SummonerDataV4> = match riot_client
             .request::<SummonerDataV4>(summoner_endpoint)
             .await
@@ -152,7 +154,9 @@ pub async fn parse_lookup_command(
     cache.insert_user_puuid(game_name, tag_line, &puuid);
     cache.save("user_cache.json");
 
-    let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid: puuid.clone() });
+    let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid {
+        puuid: puuid.clone(),
+    });
     let summoner_data_v4: Option<SummonerDataV4> = match riot_client
         .request::<SummonerDataV4>(summoner_endpoint)
         .await

@@ -1,6 +1,6 @@
-use super::super::riot::client::{RiotApiClient, parse_lookup_command};
 use super::super::riot::cache::Cache;
-use super::client::PREFIX;
+use super::super::riot::client::{RiotApiClient, parse_lookup_command};
+use crate::constants::PREFIX;
 use serenity::model::channel::Message;
 
 /// Parse a message and return a response if the message is a command the bot recognizes

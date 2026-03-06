@@ -8,8 +8,6 @@ use serenity::model::channel::Message;
 use serenity::prelude::*;
 use std::sync::{Arc, Mutex};
 
-/// Constant prefix for commands
-pub static PREFIX: &str = "&";
 
 /// Handler for events
 struct Handler {
