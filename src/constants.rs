@@ -1,4 +1,4 @@
 // Riot specific constants
 
-/// Path to the user cache file
-pub const USER_CACHE_PATH: &str = "user_cache.json";
+/// Global constants for the DiscordBot project
+pub const USER_CACHE_PATH: &str = "cache/user_cache.json";
