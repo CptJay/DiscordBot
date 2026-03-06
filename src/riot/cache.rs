@@ -1,26 +1,27 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
+use crate::constants::USER_CACHE_PATH;
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Cache {
     pub user_puuid: HashMap<String, String>, // key: username#tag, value: puuid
-                                             // Add more cache maps here as needed
+    // Add more cache maps here as needed
 }
 
 impl Cache {
-    pub fn load<P: AsRef<Path>>(path: P) -> Self {
-        if let Ok(data) = fs::read_to_string(&path) {
+    pub fn load<P: AsRef<std::path::Path>>(_path: P) -> Self {
+        let path = USER_CACHE_PATH;
+        if let Ok(data) = std::fs::read_to_string(path) {
             serde_json::from_str(&data).unwrap_or_default()
         } else {
             Cache::default()
         }
     }
 
-    pub fn save<P: AsRef<Path>>(&self, path: P) {
+    pub fn save<P: AsRef<std::path::Path>>(&self, _path: P) {
+        let path = USER_CACHE_PATH;
         if let Ok(json) = serde_json::to_string_pretty(self) {
-            let _ = fs::write(path, json);
+            let _ = std::fs::write(path, json);
         }
     }
 

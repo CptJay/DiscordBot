@@ -2,6 +2,7 @@ use crate::{
     discord::client::PREFIX,
     riot::endpoints::{Endpoint, RiotEndpoint, base::Region, summoner::SummonerEndpoint},
     riot::models::summoner::{SummonerData, SummonerDataV4},
+    riot::cache::Cache,
 };
 use reqwest::Client;
 use std::error::Error;
@@ -60,7 +61,11 @@ impl RiotApiClient {
 }
 
 #[allow(dead_code)]
-pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) -> Option<String> {
+pub async fn parse_lookup_command(
+    args: Vec<&str>,
+    riot_client: &RiotApiClient,
+    cache: &mut Cache,
+) -> Option<String> {
     if args.is_empty() {
         return Some("Please provide a command. Usage: &lookup <summoner_name>".to_string());
     }
@@ -89,6 +94,36 @@ pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) 
         return Some("Tag line cannot be longer than 5 characters.".to_string());
     }
 
+    // Check cache first
+    if let Some(puuid) = cache.get_user_puuid(game_name, tag_line) {
+        tracing::info!("Cache hit for {}#{}: puuid={}", game_name, tag_line, puuid);
+        // Use cached puuid for further lookups
+        let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid: puuid.clone() });
+        let summoner_data_v4: Option<SummonerDataV4> = match riot_client
+            .request::<SummonerDataV4>(summoner_endpoint)
+            .await
+        {
+            Ok(data) => Some(data),
+            Err(err) => {
+                tracing::error!("Error fetching summoner data by puuid: {:?}", err);
+                return Some(
+                    "Error fetching summoner data by puuid. Please check the logs for more details."
+                        .to_string(),
+                );
+            }
+        };
+        let summoner_data_v4 = summoner_data_v4?;
+        return Some(format!(
+            "Summoner: {}#{}\nLevel: {}\nProfile Icon ID: {}\npuuid: {} (cached)",
+            game_name,
+            tag_line,
+            summoner_data_v4.summoner_level,
+            summoner_data_v4.profile_icon_id,
+            summoner_data_v4.puuid
+        ));
+    }
+
+    // Not in cache, do Riot API lookup
     let riot_id_endpoint = Endpoint::Summoner(SummonerEndpoint::ByRiotId {
         game_name: game_name.to_string(),
         tag_line: tag_line.to_string(),
@@ -113,8 +148,11 @@ pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) 
         tag_line,
         puuid
     );
+    // Insert into cache and save
+    cache.insert_user_puuid(game_name, tag_line, &puuid);
+    cache.save("user_cache.json");
 
-    let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid });
+    let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid: puuid.clone() });
     let summoner_data_v4: Option<SummonerDataV4> = match riot_client
         .request::<SummonerDataV4>(summoner_endpoint)
         .await
@@ -128,7 +166,6 @@ pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) 
             );
         }
     };
-
     let summoner_data_v4 = summoner_data_v4?;
 
     Some(format!(
