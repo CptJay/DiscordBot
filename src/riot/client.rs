@@ -1,7 +1,7 @@
 use crate::{
     discord::client::PREFIX,
-    riot::endpoints::{base::Region, endpoints::Endpoint},
-    riot::models,
+    riot::endpoints::{Endpoint, RiotEndpoint, base::Region, summoner::SummonerEndpoint},
+    riot::models::summoner::{SummonerData, SummonerDataV4},
 };
 use reqwest::Client;
 use std::error::Error;
@@ -32,7 +32,7 @@ impl RiotApiClient {
         T: for<'de> serde::Deserialize<'de>,
     {
         // TODO: Remove this hack
-        let region = if let Endpoint::SommonerByRiotId { .. } = endpoint {
+        let region = if let Endpoint::Summoner(SummonerEndpoint::ByRiotId { .. }) = &endpoint {
             // For Riot ID endpoint, use EUROPE region
             Region::EUROPE.base_url().to_string()
         } else {
@@ -89,22 +89,21 @@ pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) 
         return Some("Tag line cannot be longer than 5 characters.".to_string());
     }
 
-    let riot_id_endpoint = Endpoint::SommonerByRiotId {
+    let riot_id_endpoint = Endpoint::Summoner(SummonerEndpoint::ByRiotId {
         game_name: game_name.to_string(),
         tag_line: tag_line.to_string(),
-    };
-    let summoner_data: Option<models::SummonerData> = match riot_client
-        .request::<models::SummonerData>(riot_id_endpoint)
-        .await
-    {
-        Ok(data) => Some(data),
-        Err(err) => {
-            tracing::error!("Error fetching summoner data: {:?}", err);
-            return Some(
-                "Error fetching summoner data. Please check the logs for more details.".to_string(),
-            );
-        }
-    };
+    });
+    let summoner_data: Option<SummonerData> =
+        match riot_client.request::<SummonerData>(riot_id_endpoint).await {
+            Ok(data) => Some(data),
+            Err(err) => {
+                tracing::error!("Error fetching summoner data: {:?}", err);
+                return Some(
+                    "Error fetching summoner data. Please check the logs for more details."
+                        .to_string(),
+                );
+            }
+        };
 
     // use the puuid
     let puuid = summoner_data?.puuid;
@@ -115,9 +114,9 @@ pub async fn parse_lookup_command(args: Vec<&str>, riot_client: &RiotApiClient) 
         puuid
     );
 
-    let summoner_endpoint = Endpoint::SummonerByPuuid { puuid };
-    let summoner_data_v4: Option<models::SummonerDataV4> = match riot_client
-        .request::<models::SummonerDataV4>(summoner_endpoint)
+    let summoner_endpoint = Endpoint::Summoner(SummonerEndpoint::ByPuuid { puuid });
+    let summoner_data_v4: Option<SummonerDataV4> = match riot_client
+        .request::<SummonerDataV4>(summoner_endpoint)
         .await
     {
         Ok(data) => Some(data),
