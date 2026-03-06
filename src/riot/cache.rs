@@ -1,11 +1,11 @@
+use crate::constants::USER_CACHE_PATH;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::constants::USER_CACHE_PATH;
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Cache {
     pub user_puuid: HashMap<String, String>, // key: username#tag, value: puuid
-    // Add more cache maps here as needed
+                                             // Add more cache maps here as needed
 }
 
 impl Cache {
@@ -20,6 +20,9 @@ impl Cache {
 
     pub fn save<P: AsRef<std::path::Path>>(&self, _path: P) {
         let path = USER_CACHE_PATH;
+        if let Some(parent) = std::path::Path::new(path).parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
         if let Ok(json) = serde_json::to_string_pretty(self) {
             let _ = std::fs::write(path, json);
         }
