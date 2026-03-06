@@ -1,4 +1,4 @@
-pub mod summoner;
 pub mod champion_mastery;
-pub mod league_entry;
 pub mod clash;
+pub mod league_entry;
+pub mod summoner;
